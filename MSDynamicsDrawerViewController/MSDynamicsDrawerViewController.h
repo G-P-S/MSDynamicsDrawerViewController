@@ -324,6 +324,14 @@ typedef NS_ENUM(NSInteger, MSDynamicsDrawerPaneState) {
 @property (nonatomic, assign) CGFloat elasticity;
 
 /**
+ The resistance applied to the pane view.
+ 
+ Default value of `0.0`. The linear resistance for the behavior’s dynamic items, which reduces their linear velocity over time.
+ */
+@property (nonatomic, assign) CGFloat resistance;
+
+
+/**
  The amount of elasticity applied to the pane view when it is bounced open.
  
  Applies when the pane is bounced open. Default value of `0.5`. Valid range is from `0.0` for no bounce upon collision, to `1.0` for completely elastic collisions.

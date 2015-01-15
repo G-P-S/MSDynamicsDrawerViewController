@@ -272,6 +272,7 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
     
     self.gravityMagnitude = 2.0;
     self.elasticity = 0.0;
+    self.resistance = 0.0;
     self.bounceElasticity = 0.5;
     self.bounceMagnitude = 60.0;
     self.paneStateOpenWideEdgeOffset = 20.0;
@@ -310,7 +311,7 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
     
     self.currentDrawerDirection = direction;
 
-    [self addDynamicsBehaviorsToCreatePaneState:MSDynamicsDrawerPaneStateClosed pushMagnitude:self.bounceMagnitude pushAngle:[self gravityAngleForState:MSDynamicsDrawerPaneStateOpen direction:direction] pushElasticity:self.bounceElasticity];
+    [self addDynamicsBehaviorsToCreatePaneState:MSDynamicsDrawerPaneStateClosed pushMagnitude:self.bounceMagnitude pushAngle:[self gravityAngleForState:MSDynamicsDrawerPaneStateOpen direction:direction] pushElasticity:self.bounceElasticity pushResistance:self.resistance];
     
     if (!allowUserInterruption) [self setViewUserInteractionEnabled:NO];
     __weak typeof(self) weakSelf = self;
@@ -477,10 +478,11 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
 
 - (void)addDynamicsBehaviorsToCreatePaneState:(MSDynamicsDrawerPaneState)paneState;
 {
-    [self addDynamicsBehaviorsToCreatePaneState:paneState pushMagnitude:0.0 pushAngle:0.0 pushElasticity:self.elasticity];
+    [self addDynamicsBehaviorsToCreatePaneState:paneState pushMagnitude:0.0 pushAngle:0.0 pushElasticity:self.elasticity pushResistance:self.resistance];
 }
 
-- (void)addDynamicsBehaviorsToCreatePaneState:(MSDynamicsDrawerPaneState)paneState pushMagnitude:(CGFloat)pushMagnitude pushAngle:(CGFloat)pushAngle pushElasticity:(CGFloat)elasticity
+- (void)addDynamicsBehaviorsToCreatePaneState:(MSDynamicsDrawerPaneState)paneState pushMagnitude:(CGFloat)pushMagnitude pushAngle:(CGFloat)pushAngle pushElasticity:(CGFloat)elasticity pushResistance:(CGFloat)resistance
+
 {
     if (self.currentDrawerDirection == MSDynamicsDrawerDirectionNone) {
         return;
@@ -498,6 +500,11 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
     
     if (elasticity != 0.0) {
         self.paneElasticityBehavior.elasticity = elasticity;
+        self.paneElasticityBehavior.resistance = resistance;
+        [self.dynamicAnimator addBehavior:self.paneElasticityBehavior];
+    }
+    else if (resistance != 0.0) {
+        self.paneElasticityBehavior.resistance = resistance;
         [self.dynamicAnimator addBehavior:self.paneElasticityBehavior];
     }
     
@@ -1266,7 +1273,7 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
                 // If the user released the pane over the velocity threshold
                 if (fabsf(paneVelocity) > MSPaneViewVelocityThreshold) {
                     MSDynamicsDrawerPaneState state = [self paneStateForPanVelocity:paneVelocity];
-                    [self addDynamicsBehaviorsToCreatePaneState:state pushMagnitude:(fabsf(paneVelocity) * MSPaneViewVelocityMultiplier) pushAngle:[self gravityAngleForState:state direction:self.currentDrawerDirection] pushElasticity:self.elasticity];
+                    [self addDynamicsBehaviorsToCreatePaneState:state pushMagnitude:(fabsf(paneVelocity) * MSPaneViewVelocityMultiplier) pushAngle:[self gravityAngleForState:state direction:self.currentDrawerDirection] pushElasticity:self.elasticity pushResistance:self.resistance];
                 }
                 // If not released with a velocity over the threhold, update to nearest `paneState`
                 else {
