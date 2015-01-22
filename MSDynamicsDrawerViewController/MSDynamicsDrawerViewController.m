@@ -437,7 +437,7 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
             [self.paneViewController endAppearanceTransition];
             [self addChildViewController:paneViewController];
             paneViewController.view.frame = self.paneView.bounds;
-            [paneViewController beginAppearanceTransition:YES animated:animated];
+            [paneViewController beginAppearanceTransition:YES animated:(self.disableDynamics ? NO : animated)];
             [self.paneView addSubview:paneViewController.view];
             _paneViewController = paneViewController;
             // Force redraw of the new pane view (drastically smoothes animation)
@@ -487,6 +487,12 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
     if (self.currentDrawerDirection == MSDynamicsDrawerDirectionNone) {
         return;
     }
+
+    if( self.disableDynamics )
+    {
+        [self addAnimationToCreatePaneState:paneState];
+        return;
+    }
     
     [self setPaneViewControllerViewUserInteractionEnabled:(paneState == MSDynamicsDrawerPaneStateClosed)];
     
@@ -520,6 +526,87 @@ void MSDynamicsDrawerDirectionActionForMaskedValues(NSInteger direction, MSDynam
     if ([self.delegate respondsToSelector:@selector(dynamicsDrawerViewController:mayUpdateToPaneState:forDirection:)]) {
         [self.delegate dynamicsDrawerViewController:self mayUpdateToPaneState:paneState forDirection:self.currentDrawerDirection];
     }
+}
+
+- (void)addAnimationToCreatePaneState:(MSDynamicsDrawerPaneState)paneState
+{
+    if (self.currentDrawerDirection == MSDynamicsDrawerDirectionNone) {
+        return;
+    }
+
+    CGRect rect = self.paneView.frame;
+    rect.origin = CGPointZero;
+
+    switch (paneState) {
+        case MSDynamicsDrawerPaneStateClosed:
+            rect.origin = CGPointZero;
+            break;
+
+        case MSDynamicsDrawerPaneStateOpen:
+        {
+            switch ([self currentDrawerDirection]) {
+                case MSDynamicsDrawerDirectionRight:
+                    rect.origin.x = -self.openStateRevealWidth;
+                    break;
+                case MSDynamicsDrawerDirectionLeft:
+                    rect.origin.x = self.openStateRevealWidth;
+                    break;
+                case MSDynamicsDrawerDirectionBottom:
+                    rect.origin.y = -self.openStateRevealWidth;
+                    break;
+                case MSDynamicsDrawerDirectionTop:
+                    rect.origin.y = self.openStateRevealWidth;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+
+        case MSDynamicsDrawerPaneStateOpenWide:
+        {
+            switch ([self currentDrawerDirection]) {
+                case MSDynamicsDrawerDirectionRight:
+                    rect.origin.x = -rect.size.width;
+                    break;
+                case MSDynamicsDrawerDirectionLeft:
+                    rect.origin.x = rect.size.width;
+                    break;
+                case MSDynamicsDrawerDirectionBottom:
+                    rect.origin.y = -rect.size.height;
+                    break;
+                case MSDynamicsDrawerDirectionTop:
+                    rect.origin.y = rect.size.height;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+    }
+
+    [self setPaneViewControllerViewUserInteractionEnabled:(paneState == MSDynamicsDrawerPaneStateClosed)];
+
+    NSTimeInterval duration = (self.simpleAnimationDuration > 0.0 ? self.simpleAnimationDuration : 0.25);
+    // if transitioning from mostly-open to fully-open, go faster
+    if( self.paneState == MSDynamicsDrawerPaneStateOpen && paneState == MSDynamicsDrawerPaneStateOpenWide )
+        duration /= 3.0;
+
+    self.potentialPaneState = paneState;
+    
+    if ([self.delegate respondsToSelector:@selector(dynamicsDrawerViewController:mayUpdateToPaneState:forDirection:)]) {
+        [self.delegate dynamicsDrawerViewController:self mayUpdateToPaneState:paneState forDirection:self.currentDrawerDirection];
+    }
+
+    [UIView animateWithDuration:duration
+                          delay:0.0
+                        options:0 //UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowAnimatedContent
+                     animations:^{
+                         self.paneView.frame = rect;
+                     } completion:^(BOOL finished) {
+                         [self setPaneViewControllerViewUserInteractionEnabled:(paneState == MSDynamicsDrawerPaneStateClosed)];
+                         [self dynamicAnimatorDidPause:nil];
+                     }];
 }
 
 - (UIBezierPath *)boundaryPathForState:(MSDynamicsDrawerPaneState)state direction:(MSDynamicsDrawerDirection)direction

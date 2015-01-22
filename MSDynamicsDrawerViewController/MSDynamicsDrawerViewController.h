@@ -310,6 +310,20 @@ typedef NS_ENUM(NSInteger, MSDynamicsDrawerPaneState) {
 ///-------------------------------------
 
 /**
+ If YES, uses simple [UIView animate...] rather than dynamics-base animation
+ 
+ Defaults to NO
+ */
+@property (nonatomic, assign) BOOL disableDynamics;
+
+/**
+ Controls the duration (in seconds) of the animation when disableDynamics is YES
+ 
+ Defaults to 0.25
+ */
+@property (nonatomic, assign) NSTimeInterval simpleAnimationDuration;
+
+/**
  The magnitude of the gravity vector that affects the pane view.
  
  Default value of `2.0`. A magnitude value of `1.0` represents an acceleration of 1000 points / second².
